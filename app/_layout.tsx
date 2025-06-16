@@ -15,6 +15,12 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+            name="admin"
+            options={{
+                headerShown: false,
+            }}
+        />
+        <Stack.Screen
           name="movie/[id]"
           options={{
             headerShown: false,
