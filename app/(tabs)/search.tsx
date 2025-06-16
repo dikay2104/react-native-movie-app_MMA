@@ -55,7 +55,7 @@ const Search = () => {
       <FlatList
         className="px-5"
         data={movies as Movie[]}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => `search-${item.id.toString()}`}
         renderItem={({ item }) => <MovieDisplayCard {...item} />}
         numColumns={3}
         columnWrapperStyle={{
