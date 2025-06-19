@@ -1,24 +1,63 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Image, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Image,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+import { fetchMovieDetails } from "@/services/api"; // Đảm bảo path đúng
 
 export default function EditMovie() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
 
-  // Dummy data
-  const [title, setTitle] = useState("Inception");
-  const [posterPath, setPosterPath] = useState("https://image.tmdb.org/t/p/w500/fake-poster.jpg");
-  const [releaseDate, setReleaseDate] = useState("2010-07-16");
-  const [runtime, setRuntime] = useState("148");
-  const [voteAverage, setVoteAverage] = useState("8.8");
-  const [voteCount, setVoteCount] = useState("30000");
-  const [overview, setOverview] = useState("A thief who steals corporate secrets...");
-  const [genres, setGenres] = useState("Action, Sci-Fi");
-  const [budget, setBudget] = useState("160");
-  const [revenue, setRevenue] = useState("830");
-  const [productionCompanies, setProductionCompanies] = useState("Syncopy");
+  const [loading, setLoading] = useState(true);
+  const [title, setTitle] = useState("");
+  const [posterPath, setPosterPath] = useState("");
+  const [releaseDate, setReleaseDate] = useState("");
+  const [runtime, setRuntime] = useState("");
+  const [voteAverage, setVoteAverage] = useState("");
+  const [voteCount, setVoteCount] = useState("");
+  const [overview, setOverview] = useState("");
+  const [genres, setGenres] = useState("");
+  const [budget, setBudget] = useState("");
+  const [revenue, setRevenue] = useState("");
+  const [productionCompanies, setProductionCompanies] = useState("");
+
+  useEffect(() => {
+    const loadMovie = async () => {
+      try {
+        setLoading(true);
+        const movie = await fetchMovieDetails(id as string);
+        setTitle(movie.title || "");
+        setPosterPath(`https://image.tmdb.org/t/p/w500${movie.poster_path}`);
+        setReleaseDate(movie.release_date || "");
+        setRuntime(movie.runtime?.toString() || "");
+        setVoteAverage(movie.vote_average?.toString() || "");
+        setVoteCount(movie.vote_count?.toString() || "");
+        setOverview(movie.overview || "");
+        setGenres(movie.genres?.map((g) => g.name).join(", ") || "");
+        setBudget((movie.budget / 1_000_000)?.toString() || "");
+        setRevenue((movie.revenue / 1_000_000)?.toString() || "");
+        setProductionCompanies(
+          movie.production_companies?.map((c) => c.name).join(", ") || ""
+        );
+      } catch (err) {
+        Alert.alert("❌", "Không thể tải dữ liệu phim.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadMovie();
+  }, [id]);
 
   const handleUpdate = () => {
     console.log("Updating movie:", {
@@ -53,14 +92,20 @@ export default function EditMovie() {
     ]);
   };
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator size="large" color="#8B5CF6" />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Image
           source={{
-            uri: posterPath.startsWith("http")
-              ? posterPath
-              : `https://image.tmdb.org/t/p/w500${posterPath}`,
+            uri: posterPath,
           }}
           style={styles.poster}
         />
@@ -74,8 +119,8 @@ export default function EditMovie() {
           <TextInput placeholder="Số lượt đánh giá" style={styles.input} value={voteCount} onChangeText={setVoteCount} />
           <TextInput placeholder="Tóm tắt" style={[styles.input, styles.textArea]} multiline numberOfLines={4} value={overview} onChangeText={setOverview} />
           <TextInput placeholder="Thể loại" style={styles.input} value={genres} onChangeText={setGenres} />
-          <TextInput placeholder="Ngân sách" style={styles.input} value={budget} onChangeText={setBudget} />
-          <TextInput placeholder="Doanh thu" style={styles.input} value={revenue} onChangeText={setRevenue} />
+          <TextInput placeholder="Ngân sách (triệu USD)" style={styles.input} value={budget} onChangeText={setBudget} />
+          <TextInput placeholder="Doanh thu (triệu USD)" style={styles.input} value={revenue} onChangeText={setRevenue} />
           <TextInput placeholder="Hãng sản xuất" style={styles.input} value={productionCompanies} onChangeText={setProductionCompanies} />
 
           <TouchableOpacity style={styles.createButton} onPress={handleUpdate}>
