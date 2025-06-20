@@ -209,7 +209,7 @@ const Profile = () => {
       {userRole === "admin" && (
         <TouchableOpacity
           className="bg-accent rounded-xl p-4 mb-4"
-          onPress={() => router.push("/admin")}      // TODO: Replace with actual admin screen navigation
+          onPress={() => router.push('/admin')}      // TODO: Replace with actual admin screen navigation
         >
           <Text className="text-light-100 text-xl font-bold">🛠 Trang Admin</Text>
         </TouchableOpacity>
