@@ -9,8 +9,10 @@ import { authReducer, initialAuthState } from "@/services/authReducer"
 import MovieCard from "@/components/MovieCard"
 import AuthForm from "@/components/AuthForm"
 import { useNavigation } from "@react-navigation/native"
+import { useRouter } from "expo-router";
 
 const Profile = () => {
+  const router = useRouter();
   const navigation = useNavigation()
   const [state, dispatch] = useReducer(authReducer, initialAuthState)
   const [mode, setMode] = useState<"login" | "register">("login")
@@ -207,9 +209,9 @@ const Profile = () => {
       {userRole === "admin" && (
         <TouchableOpacity
           className="bg-accent rounded-xl p-4 mb-4"
-          onPress={() => navigation.navigate("AdminScreen")}      // TODO: Replace with actual admin screen navigation
+          onPress={() => router.push("/admin")}      // TODO: Replace with actual admin screen navigation
         >
-          <Text className="text-light-100 text-xl font-bold">Đến trang Admin</Text>
+          <Text className="text-light-100 text-xl font-bold">🛠 Trang Admin</Text>
         </TouchableOpacity>
       )}
 
