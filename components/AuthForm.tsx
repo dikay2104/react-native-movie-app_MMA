@@ -1,7 +1,11 @@
-// components/AuthForm.tsx
+// components/AuthForm.tsx – version kết nối với server
 import React from "react"
 import {
-    View, Text, TextInput, TouchableOpacity, ScrollView
+    View,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    ScrollView
 } from "react-native"
 
 export default function AuthForm({
@@ -29,7 +33,7 @@ export default function AuthForm({
     setRole: (v: string) => void
     onSubmit: () => void
     toggleMode: () => void
-    onOpenUserList: () => void
+    onOpenUserList?: () => void // optional to fix error
 }) {
     return (
         <ScrollView className="flex-1 bg-primary px-6 pt-20">
@@ -91,12 +95,16 @@ export default function AuthForm({
                 </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-                className="border border-light-300 rounded-xl p-3"
-                onPress={onOpenUserList}
-            >
-                <Text className="text-light-300 text-center">Xem danh sách tài khoản</Text>
-            </TouchableOpacity>
+            {mode === "register" && onOpenUserList && (
+                <TouchableOpacity
+                    className="border border-light-300 rounded-xl p-3"
+                    onPress={onOpenUserList}
+                >
+                    <Text className="text-light-300 text-center">
+                        Xem danh sách tài khoản (dev)
+                    </Text>
+                </TouchableOpacity>
+            )}
         </ScrollView>
     )
 }

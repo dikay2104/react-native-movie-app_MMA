@@ -59,7 +59,7 @@ const Details = () => {
               className="absolute bottom-5 right-5 rounded-full size-14 bg-white flex items-center justify-center"
               onPress={() =>
                   router.push({
-                    pathname: '/(tabs)/watch',
+                    pathname: '/movie/watch',
                     params: {
                       videoUrl: `https://vidsrc.xyz/embed/movie/${id}`,
                     },
