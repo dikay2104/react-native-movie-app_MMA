@@ -3,7 +3,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
 
-const BASE_URL = 'http://172.16.0.217:5000/api';
+const BASE_URL = "http://192.168.0.3:5000/api"; // Thay đổi theo địa chỉ máy chủ của bạn
 
 if (!BASE_URL) {
     throw new Error("BASE_URL is not defined in environment variables");
@@ -93,7 +93,7 @@ export const fetchWatchedMovies = async (userId: string) => {
 // Lấy danh sách phim yêu thích
 export const fetchFavoriteMovies = async (userId: string) => {
     try {
-        const { data } = await api.get(`/users/${userId}/favorite`);
+        const { data } = await api.get(`/favorites/${userId}`);
         return data || [];
     } catch (err: any) {
         Alert.alert(
@@ -118,9 +118,10 @@ export const addWatchedMovie = async (userId: string, movieId: string) => {
 };
 
 // Thêm phim yêu thích
-export const addFavoriteMovie = async (userId: string, movieId: string) => {
+
+export const addFavoriteMovie = async (userId: string, tmdbId: string, movieId?: string) => {
     try {
-        const { data } = await api.post(`/users/${userId}/favorite/${movieId}`);
+        const { data } = await api.post("/favorites", { userId, tmdbId, movieId });
         Alert.alert(data.message || "Đã thêm vào danh sách yêu thích");
         return data;
     } catch (err: any) {
@@ -133,9 +134,7 @@ export const addFavoriteMovie = async (userId: string, movieId: string) => {
 // Xóa phim khỏi danh sách yêu thích
 export const removeFavoriteMovie = async (userId: string, movieId: string) => {
     try {
-        const { data } = await api.delete(
-            `/users/${userId}/favorite/${movieId}`
-        );
+        const { data } = await api.delete("/favorites", { data: { userId, movieId } });
         Alert.alert(data.message || "Đã xóa khỏi danh sách yêu thích");
         return data;
     } catch (err: any) {
