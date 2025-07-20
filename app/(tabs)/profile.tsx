@@ -18,11 +18,12 @@ import {
   registerUser,
   loginUser,
   logoutUser,
-  fetchWatchedMovies,
+  fetchWatchedHistory,
   fetchFavoriteMovies,
   addFavoriteMovie,
   removeFavoriteMovie,
 } from "@/services/apiService";
+import { fetchMovieDetails } from "@/services/api";
 
 const Profile = () => {
   const router = useRouter();
@@ -39,6 +40,7 @@ const Profile = () => {
   const [loadingWatched, setLoadingWatched] = useState(false);
   const [loadingFavorites, setLoadingFavorites] = useState(false);
   const [initializing, setInitializing] = useState(true);
+  const [tmdbMovies, setTmdbMovies] = useState<{ [key: string]: any }>({});
 
   // ------------------ LOAD TOKEN + USER LÚC KHỞI ĐỘNG ------------------
   useEffect(() => {
@@ -63,7 +65,7 @@ const Profile = () => {
     setLoadingWatched(true);
     setLoadingFavorites(true);
     try {
-      const watched = await fetchWatchedMovies(state.user._id);
+      const watched = await fetchWatchedHistory(state.user._id);
       const favorites = await fetchFavoriteMovies(state.user._id);
       setWatchedMovies(watched);
       setFavoriteMovies(favorites);
@@ -78,6 +80,22 @@ const Profile = () => {
   useEffect(() => {
     if (state.isAuthenticated) loadUserData();
   }, [state.isAuthenticated]);
+
+  // Fetch TMDB info for watched movies without movie
+  useEffect(() => {
+    const fetchMissingMovies = async () => {
+      const missing = watchedMovies.filter(
+        (item) => !item.movie && item.tmdbId && !tmdbMovies[item.tmdbId]
+      );
+      for (const item of missing) {
+        try {
+          const movieData = await fetchMovieDetails(String(item.tmdbId));
+          setTmdbMovies((prev) => ({ ...prev, [item.tmdbId]: movieData }));
+        } catch {}
+      }
+    };
+    if (watchedMovies.length > 0) fetchMissingMovies();
+  }, [watchedMovies]);
 
   // ------------------ API CALLS ------------------
   const handleRegister = async () => {
@@ -188,15 +206,25 @@ const Profile = () => {
             numColumns={3}
             columnWrapperStyle={{ justifyContent: "flex-start", gap: 20, paddingRight: 5, marginBottom: 10 }}
             scrollEnabled={false}
-            renderItem={({ item }) => (
-              <MovieCard
-                {...item}
-                id={item._id?.$oid || item._id} // thêm id = _id
-                poster_path={item.posterUrl}
-                vote_average={item.rating}
-                release_date={item.releaseDate}
-              />
-            )}
+            renderItem={({ item }) => {
+              if (item.movie) {
+                return (
+                  <MovieCard
+                    {...item.movie}
+                    poster_path={item.movie.posterUrl}
+                    vote_average={item.movie.rating}
+                    release_date={item.movie.releaseDate}
+                  />
+                );
+              }
+              if (tmdbMovies[item.tmdbId]) {
+                return <MovieCard {...tmdbMovies[item.tmdbId]} />;
+              }
+              // Đang fetch hoặc lỗi, hiển thị placeholder
+              return (
+                <View style={{ width: 100, height: 150, backgroundColor: "#222", borderRadius: 8, margin: 8 }} />
+              );
+            }}
           />
         )}
       </View>
