@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useEffect, useState } from "react";
 
 import { icons } from "@/constants/icons";
 import useFetch from "@/services/usefetch";
@@ -93,7 +94,9 @@ const Details = () => {
         <View>
           <Image
             source={{
-              uri: `https://image.tmdb.org/t/p/w500${movie?.poster_path}`,
+              uri: movie?.poster_path?.includes("http")
+                ? movie.poster_path
+                : `https://image.tmdb.org/t/p/w500${movie?.poster_path}`,
             }}
             className="w-full h-[550px]"
             resizeMode="stretch"

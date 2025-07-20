@@ -118,6 +118,7 @@ export const addWatchedMovie = async (userId: string, movieId: string) => {
 };
 
 // Thêm phim yêu thích
+
 export const addFavoriteMovie = async (userId: string, tmdbId: string, movieId?: string) => {
     try {
         const { data } = await api.post("/favorites", { userId, tmdbId, movieId });
@@ -125,6 +126,7 @@ export const addFavoriteMovie = async (userId: string, tmdbId: string, movieId?:
         return data;
     } catch (err: any) {
         Alert.alert(err.response?.data?.message || "Lỗi thêm phim yêu thích");
+        console.log("🔥 err.response", err.response?.data);
         throw err;
     }
 };
@@ -145,21 +147,28 @@ export const removeFavoriteMovie = async (userId: string, movieId: string) => {
 // ------------------ CRUD MOVIES ------------------
 // Tạo phim mới
 export const createMovie = async (movieData: {
-    title: string;
-    posterUrl?: string;
-    rating?: number;
-    releaseDate?: string;
-    [key: string]: any;
+  posterUrl: string;
+  title: string;
+  releaseDate: string; // ISO date string, e.g. "2025-01-01"
+  runtime: number;
+  rating: number;
+  voteCount: number;
+  overview: string;
+  genres?: string[]; // optional
+  budgetUSD?: number;
+  revenueUSD?: number;
+  productionCompany: string;
 }) => {
-    try {
-        const { data } = await api.post("/movies", movieData);
-        return data;
-    } catch (err: any) {
-        Alert.alert(err.response?.data?.message || "Lỗi tạo phim");
-        console.log("🔥 err.response", err.response?.data);
-        throw err;
-    }
+  try {
+    const { data } = await api.post("/movies", movieData);
+    return data;
+  } catch (err: any) {
+    Alert.alert(err.response?.data?.message || "Lỗi tạo phim");
+    console.log("🔥 err.response", err.response?.data);
+    throw err;
+  }
 };
+
 
 // Lấy tất cả phim
 export const getAllMovies = async () => {

@@ -191,6 +191,7 @@ const Profile = () => {
             renderItem={({ item }) => (
               <MovieCard
                 {...item}
+                id={item._id?.$oid || item._id} // thêm id = _id
                 poster_path={item.posterUrl}
                 vote_average={item.rating}
                 release_date={item.releaseDate}
