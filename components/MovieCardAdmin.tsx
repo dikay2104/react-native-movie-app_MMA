@@ -3,7 +3,8 @@ import { useRouter } from "expo-router";
 import { icons } from "@/constants/icons";
 
 type MovieCardAdminProps = {
-  id: number;
+  _id?: string; // MongoDB
+  id?: number;  // TMDB
   title: string;
   poster_path?: string;
   vote_average: number;
@@ -11,25 +12,30 @@ type MovieCardAdminProps = {
 };
 
 const MovieCardAdmin = ({
-                          id,
-                          poster_path,
-                          title,
-                          vote_average,
-                          release_date,
-                        }: MovieCardAdminProps) => {
+  _id,
+  id,
+  title,
+  poster_path,
+  vote_average,
+  release_date,
+}: MovieCardAdminProps) => {
   const router = useRouter();
 
+  const imageUrl = poster_path?.startsWith("http")
+    ? poster_path // MongoDB thường lưu sẵn URL
+    : poster_path
+    ? `https://image.tmdb.org/t/p/w500${poster_path}` // TMDB dạng relative path
+    : "https://placehold.co/600x400/1a1a1a/FFFFFF.png";
+
+  const handlePress = () => {
+    // Ưu tiên sử dụng _id nếu có (MongoDB), fallback sang id (TMDB)
+    router.push(`/admin/${_id || id}`);
+  };
+
   return (
-    <TouchableOpacity
-      onPress={() => router.push(`/admin/${id}`)}
-      className="w-[30%]"
-    >
+    <TouchableOpacity onPress={handlePress} className="w-[30%]">
       <Image
-        source={{
-          uri: poster_path
-            ? `https://image.tmdb.org/t/p/w500${poster_path}`
-            : "https://placehold.co/600x400/1a1a1a/FFFFFF.png",
-        }}
+        source={{ uri: imageUrl }}
         className="w-full h-52 rounded-lg"
         resizeMode="cover"
       />
