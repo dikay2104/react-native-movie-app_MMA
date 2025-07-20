@@ -3,7 +3,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
 
-const BASE_URL = "http://192.168.1.4:5000/api"; // Thay đổi theo địa chỉ máy chủ của bạn
+const BASE_URL = 'http://172.16.0.217:5000/api';
 
 if (!BASE_URL) {
     throw new Error("BASE_URL is not defined in environment variables");
@@ -148,21 +148,28 @@ export const removeFavoriteMovie = async (userId: string, movieId: string) => {
 // ------------------ CRUD MOVIES ------------------
 // Tạo phim mới
 export const createMovie = async (movieData: {
-    title: string;
-    posterUrl?: string;
-    rating?: number;
-    releaseDate?: string;
-    [key: string]: any;
+  posterUrl: string;
+  title: string;
+  releaseDate: string; // ISO date string, e.g. "2025-01-01"
+  runtime: number;
+  rating: number;
+  voteCount: number;
+  overview: string;
+  genres?: string[]; // optional
+  budgetUSD?: number;
+  revenueUSD?: number;
+  productionCompany: string;
 }) => {
-    try {
-        const { data } = await api.post("/movies", movieData);
-        return data;
-    } catch (err: any) {
-        Alert.alert(err.response?.data?.message || "Lỗi tạo phim");
-        console.log("🔥 err.response", err.response?.data);
-        throw err;
-    }
+  try {
+    const { data } = await api.post("/movies", movieData);
+    return data;
+  } catch (err: any) {
+    Alert.alert(err.response?.data?.message || "Lỗi tạo phim");
+    console.log("🔥 err.response", err.response?.data);
+    throw err;
+  }
 };
+
 
 // Lấy tất cả phim
 export const getAllMovies = async () => {
