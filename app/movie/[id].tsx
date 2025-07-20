@@ -8,10 +8,11 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useEffect, useState } from "react";
 
 import { icons } from "@/constants/icons";
 import useFetch from "@/services/usefetch";
-import { fetchMovieDetails } from "@/services/api";
+import { fetchMovieDetails, fetchTmdbIdByTitle } from "@/services/api";
 
 interface MovieInfoProps {
   label: string;
@@ -30,10 +31,23 @@ const MovieInfo = ({ label, value }: MovieInfoProps) => (
 const Details = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-
   const { data: movie, loading } = useFetch(() =>
     fetchMovieDetails(id as string)
   );
+
+  const [tmdbId, setTmdbId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const getTmdbId = async () => {
+      if (movie?.id) {
+        setTmdbId(movie.id);
+      } else if (movie?.title) {
+        const fetchedId = await fetchTmdbIdByTitle(movie.title);
+        setTmdbId(fetchedId);
+      }
+    };
+    if (movie) getTmdbId();
+  }, [movie]);
 
   if (loading)
     return (
@@ -48,31 +62,33 @@ const Details = () => {
         <View>
           <Image
             source={{
-              uri: `https://image.tmdb.org/t/p/w500${movie?.poster_path}`,
+              uri: movie?.poster_path?.includes("http")
+                ? movie.poster_path
+                : `https://image.tmdb.org/t/p/w500${movie?.poster_path}`,
             }}
             className="w-full h-[550px]"
             resizeMode="stretch"
           />
 
-{/* nut button */}
+          {/* nut button */}
           <TouchableOpacity
-              className="absolute bottom-5 right-5 rounded-full size-14 bg-white flex items-center justify-center"
-              onPress={() =>
-                  router.push({
-                    pathname: '/movie/watch',
-                    params: {
-                      videoUrl: `https://vidsrc.xyz/embed/movie/${id}`,
-                    },
-                  })
-              }
+            className="absolute bottom-5 right-5 rounded-full size-14 bg-white flex items-center justify-center"
+            onPress={() =>
+              router.push({
+                pathname: "/movie/watch",
+                params: {
+                  videoUrl: `https://vidsrc.xyz/embed/movie/${tmdbId}`,
+                },
+              })
+            }
+            disabled={!tmdbId}
           >
             <Image
-                source={icons.play}
-                className="w-6 h-7 ml-1"
-                resizeMode="stretch"
+              source={icons.play}
+              className="w-6 h-7 ml-1"
+              resizeMode="stretch"
             />
           </TouchableOpacity>
-
         </View>
 
         <View className="flex-col items-start justify-center mt-5 px-5">
