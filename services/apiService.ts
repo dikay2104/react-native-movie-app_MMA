@@ -3,7 +3,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
 
-const BASE_URL = "http://192.168.0.3:5000/api"; // Thay đổi theo địa chỉ máy chủ của bạn
+const BASE_URL = "http://192.168.31.194:5000/api"; // Thay đổi theo địa chỉ máy chủ của bạn
 
 if (!BASE_URL) {
     throw new Error("BASE_URL is not defined in environment variables");
@@ -130,9 +130,9 @@ export const addFavoriteMovie = async (userId: string, tmdbId: string, movieId?:
 };
 
 // Xóa phim khỏi danh sách yêu thích
-export const removeFavoriteMovie = async (userId: string, movieId: string) => {
+export const removeFavoriteMovie = async (favoriteId: string) => {
     try {
-        const { data } = await api.delete("/favorites", { data: { userId, movieId } });
+        const { data } = await api.delete("/favorites", { data: { favoriteId } });
         Alert.alert(data.message || "Đã xóa khỏi danh sách yêu thích");
         return data;
     } catch (err: any) {
@@ -279,6 +279,26 @@ export const deleteUser = async (userId: string) => {
     } catch (err: any) {
         Alert.alert(err.response?.data?.message || "Lỗi xóa người dùng");
         console.log("🔥 err.response", err.response?.data);
+        throw err;
+    }
+};
+
+export const addWatchedHistory = async (userId: string, tmdbId: string, movieId?: string) => {
+    try {
+        const { data } = await api.post("/watched", { userId, tmdbId, movieId });
+        return data;
+    } catch (err: any) {
+        Alert.alert(err.response?.data?.message || "Lỗi thêm vào lịch sử đã xem");
+        throw err;
+    }
+};
+
+export const fetchWatchedHistory = async (userId: string) => {
+    try {
+        const { data } = await api.get(`/watched/${userId}`);
+        return data || [];
+    } catch (err: any) {
+        Alert.alert(err.response?.data?.message || "Lỗi lấy lịch sử đã xem");
         throw err;
     }
 };

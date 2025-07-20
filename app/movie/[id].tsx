@@ -14,7 +14,7 @@ import { icons } from "@/constants/icons";
 import useFetch from "@/services/usefetch";
 import { fetchMovieDetails } from "@/services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { addFavoriteMovie, fetchFavoriteMovies } from "@/services/apiService";
+import { addFavoriteMovie, fetchFavoriteMovies, removeFavoriteMovie, addWatchedMovie, addWatchedHistory } from "@/services/apiService";
 import heartIcon from "../../assets/icons/heart.png"; // Đảm bảo có icon này trong assets/icons
 import { useEffect, useState } from "react";
 
@@ -36,6 +36,7 @@ const Details = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [isFavorite, setIsFavorite] = useState(false);
+  const [favoriteId, setFavoriteId] = useState<string | null>(null);
   const { data: movie, loading } = useFetch(() =>
     fetchMovieDetails(id as string)
   );
@@ -48,13 +49,14 @@ const Details = () => {
         if (!userStr || !movie) return;
         const user = JSON.parse(userStr);
         const favorites = await fetchFavoriteMovies(user._id);
-        // Kiểm tra theo tmdbId
-        const found = favorites.some(
+        // Tìm bản ghi favorite
+        const found = favorites.find(
           (fav: any) =>
             (fav.tmdbId && String(fav.tmdbId) === String(movie.id)) ||
             (fav.movie && fav.movie._id && String(fav.movie._id) === String((movie as any)._id))
         );
-        setIsFavorite(found);
+        setIsFavorite(!!found);
+        setFavoriteId(found ? found._id : null);
       } catch {}
     };
     checkFavorite();
@@ -73,10 +75,18 @@ const Details = () => {
         Alert.alert("Không tìm thấy thông tin phim hợp lệ!");
         return;
       }
-      await addFavoriteMovie(user._id, String(movie.id));
-      setIsFavorite(true);
+      if (isFavorite && favoriteId) {
+        // Nếu đã là favorite, xóa khỏi danh sách yêu thích theo _id
+        await removeFavoriteMovie(favoriteId);
+        setIsFavorite(false);
+        setFavoriteId(null);
+      } else {
+        // Nếu chưa là favorite, thêm vào danh sách yêu thích
+        await addFavoriteMovie(user._id, String(movie.id), (movie as any)._id);
+        setIsFavorite(true);
+      }
     } catch (err) {
-      Alert.alert("Lỗi thêm phim yêu thích");
+      Alert.alert("Lỗi xử lý phim yêu thích");
     }
   };
 
@@ -139,14 +149,21 @@ const Details = () => {
                 alignItems: "center",
                 justifyContent: "center",
               }}
-              onPress={() =>
+              onPress={async () => {
+                try {
+                  const userStr = await AsyncStorage.getItem("currentUser");
+                  if (userStr && movie && movie.id) {
+                    const user = JSON.parse(userStr);
+                    await addWatchedHistory(user._id, String(movie.id), (movie as any)._id);
+                  }
+                } catch {}
                 router.push({
                   pathname: '/movie/watch',
                   params: {
                     videoUrl: `https://vidsrc.xyz/embed/movie/${id}`,
                   },
-                })
-              }
+                });
+              }}
             >
               <Image
                 source={icons.play}
