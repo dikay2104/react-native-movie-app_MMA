@@ -1,5 +1,4 @@
-// ProfileServer.tsx – phiên bản dùng API backend (Express + MongoDB)
-
+// ProfileServer.tsx
 import React, { useEffect, useState, useReducer } from "react";
 import {
   View,
@@ -8,32 +7,14 @@ import {
   TouchableOpacity,
   ScrollView,
   FlatList,
-  Alert,
   ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import { authReducer, initialAuthState } from "@/services/authReducer";
 import MovieCard from "@/components/MovieCard";
 import AuthForm from "@/components/AuthForm";
 import { useRouter } from "expo-router";
-
-/**
- * =============================
- * axios instance
- * =============================
- * Thay đổi BASE_URL để trỏ tới server Node/Express của bạn.
- * Ví dụ: http://192.168.1.10:3000/api  (LAN)  hoặc  https://your-domain.com/api
- */
-const BASE_URL = "http://192.168.1.6:5000/api";
-const api = axios.create({ baseURL: BASE_URL });
-
-// Tự đính kèm token vào header "Authorization: Bearer <token>"
-api.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+import { registerUser, loginUser, logoutUser, fetchWatchedMovies } from "@/services/apiService";
 
 const Profile = () => {
   const router = useRouter();
@@ -47,7 +28,7 @@ const Profile = () => {
   const [role, setRole] = useState("user");
   const [watchedMovies, setWatchedMovies] = useState<any[]>([]);
   const [loadingWatched, setLoadingWatched] = useState(false);
-  const [initializing, setInitializing] = useState(true); // kiểm tra token khi mở app
+  const [initializing, setInitializing] = useState(true);
 
   // ------------------ LOAD TOKEN + USER LÚC KHỞI ĐỘNG ------------------
   useEffect(() => {
@@ -65,41 +46,27 @@ const Profile = () => {
   }, []);
 
   // ------------------ API CALLS ------------------
-  const DEFAULT_AVATAR_URL = "https://i.pravatar.cc/300?img=58";
-
   const handleRegister = async () => {
-    if (!email || !password) return Alert.alert("Vui lòng nhập đầy đủ thông tin");
     try {
-      const finalAvatar = avatarUrl.trim() || DEFAULT_AVATAR_URL;
-
-      await api.post("/auth/register", { email, password, avatarUrl: finalAvatar, role });
-      Alert.alert("Đăng ký thành công, đăng nhập ngay!");
+      await registerUser(email, password, avatarUrl, role);
       setMode("login");
       setPassword("");
-    } catch (err: any) {
-      Alert.alert(err.response?.data?.message || "Đăng ký thất bại");
-      console.log("🔥 err.response", err.response?.data);
+    } catch (err) {
+      // Lỗi đã được xử lý trong apiService
     }
   };
 
   const handleLogin = async () => {
-    if (!email || !password) return Alert.alert("Nhập email & mật khẩu");
     try {
-      const { data } = await api.post("/auth/login", { email, password });
-      const { user, token } = data;
-      await AsyncStorage.multiSet([
-        ["currentUser", JSON.stringify(user)],
-        ["token", token],
-      ]);
+      const user = await loginUser(email, password);
       dispatch({ type: "LOGIN", payload: user });
-    } catch (err: any) {
-      Alert.alert(err.response?.data?.message || "Đăng nhập thất bại");
-      console.log("🔥 err.response", err.response?.data)
+    } catch (err) {
+      // Lỗi đã được xử lý trong apiService
     }
   };
 
   const handleLogout = async () => {
-    await AsyncStorage.multiRemove(["currentUser", "token"]);
+    await logoutUser();
     dispatch({ type: "LOGOUT" });
   };
 
@@ -108,10 +75,8 @@ const Profile = () => {
     if (!state.user) return;
     setLoadingWatched(true);
     try {
-      const { data } = await api.get(`/users/${state.user._id}`);
-      setWatchedMovies(data.watchedMovies || []);
-    } catch (err) {
-      console.error("Lỗi load watched", err);
+      const movies = await fetchWatchedMovies(state.user._id);
+      setWatchedMovies(movies);
     } finally {
       setLoadingWatched(false);
     }
@@ -156,7 +121,7 @@ const Profile = () => {
     <ScrollView className="flex-1 bg-primary px-6 py-8 pb-20">
       {/* ---------- HEADER ---------- */}
       <View className="items-center mb-8">
-        <Image source={{ uri: userAvatar }} className="w-32 h-32 rounded-full border-4 border-accent mb-4" />
+        <Image source={{ uri: userAvatar }} className="w-32 h-32 rounded-full border比べ4 border-accent mb-4" />
         <Text className="text-light-100 text-xl font-bold">{userEmail}</Text>
         <Text className="text-light-300 text-sm mt-1">Ngày tạo: {new Date(createdAt).toLocaleDateString()}</Text>
         <TouchableOpacity onPress={handleLogout}>
@@ -166,7 +131,7 @@ const Profile = () => {
 
       {/* ---------- ADMIN NAV ---------- */}
       {userRole === "admin" && (
-        <TouchableOpacity className="bg-accent rounded-xl p-4 mb-4" onPress={() => router.push("/admin")}>        
+        <TouchableOpacity className="bg-accent rounded-xl p-4 mb-4" onPress={() => router.push("/admin")}>
           <Text className="text-light-100 text-xl font-bold">🛠 Trang Admin</Text>
         </TouchableOpacity>
       )}
