@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState } from "react";
 import { useRouter } from "expo-router";
+import { createMovie } from '@/services/apiService';
 
 export default function CreateMovie() {
   const router = useRouter();
@@ -26,24 +27,28 @@ export default function CreateMovie() {
   const [revenue, setRevenue] = useState("");
   const [productionCompanies, setProductionCompanies] = useState("");
 
-  const handleCreate = () => {
-    const newMovie = {
-      title,
-      posterPath,
-      releaseDate,
-      runtime,
-      voteAverage,
-      voteCount,
-      overview,
-      genres,
-      budget,
-      revenue,
-      productionCompanies,
-    };
+  const handleCreate = async () => {
+    try {
+      const newMovie = {
+        title,
+        posterUrl: posterPath,
+        releaseDate,
+        runtime: Number(runtime),
+        rating: Number(voteAverage),
+        voteCount: Number(voteCount),
+        overview,
+        genres: genres.split(",").map(g => g.trim()), // optional
+        budgetUSD: Number(budget),
+        revenueUSD: Number(revenue),
+        productionCompany: productionCompanies,
+      };
 
-    console.log("New movie created:", newMovie);
-    Alert.alert("✅", "Phim mới đã được tạo (mock)");
-    router.back();
+      await createMovie(newMovie);
+      Alert.alert("🎉 Thành công", "Phim đã được tạo!");
+      router.back();
+    } catch (err) {
+      console.error("❌ Lỗi khi tạo phim:", err);
+    }
   };
 
   return (
