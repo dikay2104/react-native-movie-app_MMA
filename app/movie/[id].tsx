@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -12,6 +13,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { icons } from "@/constants/icons";
 import useFetch from "@/services/usefetch";
 import { fetchMovieDetails } from "@/services/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { addFavoriteMovie, fetchFavoriteMovies } from "@/services/apiService";
+import heartIcon from "../../assets/icons/heart.png"; // Đảm bảo có icon này trong assets/icons
+import { useEffect, useState } from "react";
 
 interface MovieInfoProps {
   label: string;
@@ -30,10 +35,50 @@ const MovieInfo = ({ label, value }: MovieInfoProps) => (
 const Details = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-
+  const [isFavorite, setIsFavorite] = useState(false);
   const { data: movie, loading } = useFetch(() =>
     fetchMovieDetails(id as string)
   );
+
+  // Kiểm tra trạng thái favorite khi load trang
+  useEffect(() => {
+    const checkFavorite = async () => {
+      try {
+        const userStr = await AsyncStorage.getItem("currentUser");
+        if (!userStr || !movie) return;
+        const user = JSON.parse(userStr);
+        const favorites = await fetchFavoriteMovies(user._id);
+        // Kiểm tra theo tmdbId
+        const found = favorites.some(
+          (fav: any) =>
+            (fav.tmdbId && String(fav.tmdbId) === String(movie.id)) ||
+            (fav.movie && fav.movie._id && String(fav.movie._id) === String((movie as any)._id))
+        );
+        setIsFavorite(found);
+      } catch {}
+    };
+    checkFavorite();
+  }, [movie]);
+
+  // Hàm xử lý khi ấn trái tim
+  const handleFavorite = async () => {
+    try {
+      const userStr = await AsyncStorage.getItem("currentUser");
+      if (!userStr) {
+        Alert.alert("Bạn cần đăng nhập để lưu yêu thích!");
+        return;
+      }
+      const user = JSON.parse(userStr);
+      if (!movie || !movie.id) {
+        Alert.alert("Không tìm thấy thông tin phim hợp lệ!");
+        return;
+      }
+      await addFavoriteMovie(user._id, String(movie.id));
+      setIsFavorite(true);
+    } catch (err) {
+      Alert.alert("Lỗi thêm phim yêu thích");
+    }
+  };
 
   if (loading)
     return (
@@ -54,25 +99,62 @@ const Details = () => {
             resizeMode="stretch"
           />
 
-{/* nut button */}
-          <TouchableOpacity
-              className="absolute bottom-5 right-5 rounded-full size-14 bg-white flex items-center justify-center"
-              onPress={() =>
-                  router.push({
-                    pathname: '/movie/watch',
-                    params: {
-                      videoUrl: `https://vidsrc.xyz/embed/movie/${id}`,
-                    },
-                  })
-              }
+          {/* Nút trái tim và nút play cạnh nhau ở góc dưới poster */}
+          <View
+            style={{
+              position: "absolute",
+              bottom: 20,
+              right: 20,
+              flexDirection: "row",
+              gap: 16,
+            }}
           >
-            <Image
+            <TouchableOpacity
+              style={{
+                backgroundColor: "white",
+                borderRadius: 28,
+                width: 56,
+                height: 56,
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 8,
+              }}
+              onPress={handleFavorite}
+            >
+              <Image
+                source={heartIcon}
+                style={{
+                  width: 28,
+                  height: 28,
+                  tintColor: isFavorite ? "red" : "gray",
+                }}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                backgroundColor: "white",
+                borderRadius: 28,
+                width: 56,
+                height: 56,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              onPress={() =>
+                router.push({
+                  pathname: '/movie/watch',
+                  params: {
+                    videoUrl: `https://vidsrc.xyz/embed/movie/${id}`,
+                  },
+                })
+              }
+            >
+              <Image
                 source={icons.play}
-                className="w-6 h-7 ml-1"
+                style={{ width: 24, height: 28, marginLeft: 2 }}
                 resizeMode="stretch"
-            />
-          </TouchableOpacity>
-
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View className="flex-col items-start justify-center mt-5 px-5">
