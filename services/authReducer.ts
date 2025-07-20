@@ -2,6 +2,7 @@
 export type AuthState = {
     isAuthenticated: boolean;
     user: null | {
+        _id: string;
         email: string;
         avatarUrl: string;
         createdAt: string;
