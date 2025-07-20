@@ -14,7 +14,15 @@ import { authReducer, initialAuthState } from "@/services/authReducer";
 import MovieCard from "@/components/MovieCard";
 import AuthForm from "@/components/AuthForm";
 import { useRouter } from "expo-router";
-import { registerUser, loginUser, logoutUser, fetchWatchedMovies } from "@/services/apiService";
+import {
+  registerUser,
+  loginUser,
+  logoutUser,
+  fetchWatchedMovies,
+  fetchFavoriteMovies,
+  addFavoriteMovie,
+  removeFavoriteMovie,
+} from "@/services/apiService";
 
 const Profile = () => {
   const router = useRouter();
@@ -27,7 +35,9 @@ const Profile = () => {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [role, setRole] = useState("user");
   const [watchedMovies, setWatchedMovies] = useState<any[]>([]);
+  const [favoriteMovies, setFavoriteMovies] = useState<any[]>([]);
   const [loadingWatched, setLoadingWatched] = useState(false);
+  const [loadingFavorites, setLoadingFavorites] = useState(false);
   const [initializing, setInitializing] = useState(true);
 
   // ------------------ LOAD TOKEN + USER LÚC KHỞI ĐỘNG ------------------
@@ -38,12 +48,36 @@ const Profile = () => {
         if (savedUser) {
           dispatch({ type: "LOGIN", payload: JSON.parse(savedUser) });
         }
+      } catch (err) {
+        console.error("Lỗi khi khởi tạo user:", err);
       } finally {
         setInitializing(false);
       }
     };
     bootstrap();
   }, []);
+
+  // ------------------ FETCH USER DATA ------------------
+  const loadUserData = async () => {
+    if (!state.user) return;
+    setLoadingWatched(true);
+    setLoadingFavorites(true);
+    try {
+      const watched = await fetchWatchedMovies(state.user._id);
+      const favorites = await fetchFavoriteMovies(state.user._id);
+      setWatchedMovies(watched);
+      setFavoriteMovies(favorites);
+    } catch (err) {
+      // Lỗi đã được xử lý trong apiService
+    } finally {
+      setLoadingWatched(false);
+      setLoadingFavorites(false);
+    }
+  };
+
+  useEffect(() => {
+    if (state.isAuthenticated) loadUserData();
+  }, [state.isAuthenticated]);
 
   // ------------------ API CALLS ------------------
   const handleRegister = async () => {
@@ -66,25 +100,31 @@ const Profile = () => {
   };
 
   const handleLogout = async () => {
-    await logoutUser();
-    dispatch({ type: "LOGOUT" });
-  };
-
-  // ------------------ FETCH WATCHED MOVIES ------------------
-  const loadWatched = async () => {
-    if (!state.user) return;
-    setLoadingWatched(true);
     try {
-      const movies = await fetchWatchedMovies(state.user._id);
-      setWatchedMovies(movies);
-    } finally {
-      setLoadingWatched(false);
+      await logoutUser();
+      dispatch({ type: "LOGOUT" });
+    } catch (err) {
+      console.error("Lỗi đăng xuất:", err);
     }
   };
 
-  useEffect(() => {
-    if (state.isAuthenticated) loadWatched();
-  }, [state.isAuthenticated]);
+  const handleAddFavorite = async (movieId: string) => {
+    try {
+      await addFavoriteMovie(state.user!._id, movieId);
+      await loadUserData(); // Cập nhật lại danh sách
+    } catch (err) {
+      // Lỗi đã được xử lý trong apiService
+    }
+  };
+
+  const handleRemoveFavorite = async (movieId: string) => {
+    try {
+      await removeFavoriteMovie(state.user!._id, movieId);
+      await loadUserData(); // Cập nhật lại danh sách
+    } catch (err) {
+      // Lỗi đã được xử lý trong apiService
+    }
+  };
 
   // ------------------ RENDER ------------------
   if (initializing) {
@@ -121,7 +161,7 @@ const Profile = () => {
     <ScrollView className="flex-1 bg-primary px-6 py-8 pb-20">
       {/* ---------- HEADER ---------- */}
       <View className="items-center mb-8">
-        <Image source={{ uri: userAvatar }} className="w-32 h-32 rounded-full border比べ4 border-accent mb-4" />
+        <Image source={{ uri: userAvatar }} className="w-32 h-32 rounded-full border-4 border-accent mb-4" />
         <Text className="text-light-100 text-xl font-bold">{userEmail}</Text>
         <Text className="text-light-300 text-sm mt-1">Ngày tạo: {new Date(createdAt).toLocaleDateString()}</Text>
         <TouchableOpacity onPress={handleLogout}>
@@ -159,6 +199,46 @@ const Profile = () => {
           />
         )}
       </View>
+
+      {/* ---------- FAVORITE MOVIES ---------- */}
+      {/* <View className="mt-10">
+        <Text className="text-lg text-light-100 font-bold mb-3">Phim yêu thích</Text>
+        {loadingFavorites ? (
+          <ActivityIndicator />
+        ) : (
+          <>
+            <TouchableOpacity
+              className="bg-accent rounded-xl p-4 mb-4"
+              onPress={() => handleAddFavorite("movie_id_here")} // Thay bằng movieId thực tế
+            >
+              <Text className="text-light-100 text-xl font-bold">Thêm phim yêu thích</Text>
+            </TouchableOpacity>
+            <FlatList
+              data={favoriteMovies}
+              keyExtractor={(item) => `favorite-${item._id || item.id}`}
+              numColumns={3}
+              columnWrapperStyle={{ justifyContent: "flex-start", gap: 20, paddingRight: 5, marginBottom: 10 }}
+              scrollEnabled={false}
+              renderItem={({ item }) => (
+                <View>
+                  <MovieCard
+                    {...item}
+                    poster_path={item.posterUrl}
+                    vote_average={item.rating}
+                    release_date={item.releaseDate}
+                  />
+                  <TouchableOpacity
+                    className="bg-red-400 rounded-xl p-2 mt-2"
+                    onPress={() => handleRemoveFavorite(item._id)}
+                  >
+                    <Text className="text-light-100 text-center">Xóa khỏi yêu thích</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            />
+          </>
+        )}
+      </View> */}
 
       {/* ---------- FOOTER ---------- */}
       <View className="border-t border-light-300 pt-6 mt-10 pb-36">
