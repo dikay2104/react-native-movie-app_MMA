@@ -3,7 +3,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
 
-const BASE_URL = "http://192.168.31.194:5000/api"; // Thay đổi theo địa chỉ máy chủ của bạn
+const BASE_URL = "http://172.16.0.2:5000/api"; // Thay đổi theo địa chỉ máy chủ của bạn
 
 if (!BASE_URL) {
     throw new Error("BASE_URL is not defined in environment variables");
@@ -308,6 +308,28 @@ export const fetchWatchedHistory = async (userId: string) => {
         return data || [];
     } catch (err: any) {
         Alert.alert(err.response?.data?.message || "Lỗi lấy lịch sử đã xem");
+        throw err;
+    }
+};
+
+export const sendOtpResetPassword = async (email: string) => {
+    try {
+        const { data } = await api.post("/auth/send-otp-reset", { email });
+        Alert.alert(data.message || "OTP đã được gửi về email");
+        return data;
+    } catch (err: any) {
+        Alert.alert(err.response?.data?.message || "Lỗi gửi OTP");
+        throw err;
+    }
+};
+
+export const resetPasswordWithOtp = async (email: string, otp: string, newPassword: string) => {
+    try {
+        const { data } = await api.post("/auth/reset-password-otp", { email, otp, newPassword });
+        Alert.alert(data.message || "Đổi mật khẩu thành công");
+        return data;
+    } catch (err: any) {
+        Alert.alert(err.response?.data?.message || "Lỗi đổi mật khẩu");
         throw err;
     }
 };

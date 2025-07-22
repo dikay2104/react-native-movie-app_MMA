@@ -7,6 +7,7 @@ import { fetchMovieDetails } from "@/services/api";
 import { icons } from "@/constants/icons";
 import MovieCard from "@/components/MovieCard";
 import { useFocusEffect } from "expo-router";
+import { EventBus } from "@/services/eventBus";
 
 const Save = () => {
   const [favorites, setFavorites] = useState<any[]>([]);
@@ -24,14 +25,19 @@ const Save = () => {
       setFavorites(
         [...data].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       );
-    } catch (err) {}
+    } catch (err) { }
     setLoading(false);
   };
 
-  // Reload mỗi khi tab Save được focus
+  // Sử dụng useFocusEffect để load favorites, event bus để reload
   useFocusEffect(
     useCallback(() => {
       loadFavorites();
+      const reload = () => loadFavorites();
+      EventBus.on("reloadFavorites", reload);
+      return () => {
+        EventBus.off("reloadFavorites", reload);
+      };
     }, [])
   );
 
@@ -43,7 +49,7 @@ const Save = () => {
         try {
           const movieData = await fetchMovieDetails(String(item.tmdbId));
           setTmdbMovies((prev) => ({ ...prev, [item.tmdbId]: movieData }));
-        } catch {}
+        } catch { }
       }
     };
     if (favorites.length > 0) fetchMissingMovies();

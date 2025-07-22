@@ -24,6 +24,8 @@ import {
   removeFavoriteMovie,
 } from "@/services/apiService";
 import { fetchMovieDetails } from "@/services/api";
+import { EventBus } from "@/services/eventBus";
+import ForgotPasswordScreen from "@/components/ForgotPasswordScreen";
 
 const Profile = () => {
   const router = useRouter();
@@ -41,6 +43,8 @@ const Profile = () => {
   const [loadingFavorites, setLoadingFavorites] = useState(false);
   const [initializing, setInitializing] = useState(true);
   const [tmdbMovies, setTmdbMovies] = useState<{ [key: string]: any }>({});
+  const [reloadWatched, setReloadWatched] = useState(0);
+  const [showForgot, setShowForgot] = useState(false);
 
   // ------------------ LOAD TOKEN + USER LÚC KHỞI ĐỘNG ------------------
   useEffect(() => {
@@ -81,6 +85,17 @@ const Profile = () => {
     if (state.isAuthenticated) loadUserData();
   }, [state.isAuthenticated]);
 
+  // Reload watched and favorite movies when user logs in
+  useEffect(() => {
+    const reload = () => loadUserData();
+    EventBus.on("reloadWatched", reload);
+    EventBus.on("reloadFavorites", reload);
+    return () => {
+      EventBus.off("reloadWatched", reload);
+      EventBus.off("reloadFavorites", reload);
+    };
+  }, [state.isAuthenticated]);
+
   // Fetch TMDB info for watched movies without movie
   useEffect(() => {
     const fetchMissingMovies = async () => {
@@ -91,7 +106,7 @@ const Profile = () => {
         try {
           const movieData = await fetchMovieDetails(String(item.tmdbId));
           setTmdbMovies((prev) => ({ ...prev, [item.tmdbId]: movieData }));
-        } catch {}
+        } catch { }
       }
     };
     if (watchedMovies.length > 0) fetchMissingMovies();
@@ -155,6 +170,11 @@ const Profile = () => {
 
   // ====== Chưa đăng nhập ======
   if (!state.isAuthenticated) {
+    if (showForgot) {
+      return (
+        <ForgotPasswordScreen onBack={() => setShowForgot(false)} />
+      );
+    }
     return (
       <AuthForm
         mode={mode}
@@ -162,12 +182,9 @@ const Profile = () => {
         setEmail={setEmail}
         password={password}
         setPassword={setPassword}
-        avatarUrl={avatarUrl}
-        setAvatarUrl={setAvatarUrl}
-        role={role}
-        setRole={setRole}
         onSubmit={mode === "login" ? handleLogin : handleRegister}
         toggleMode={() => setMode(mode === "login" ? "register" : "login")}
+        onForgotPassword={() => setShowForgot(true)} // Thêm prop này
       />
     );
   }
@@ -199,6 +216,10 @@ const Profile = () => {
         <Text className="text-lg text-light-100 font-bold mb-3">Phim đã xem</Text>
         {loadingWatched ? (
           <ActivityIndicator />
+        ) : watchedMovies.length === 0 ? (
+          <Text className="text-light-300 text-center mb-6">
+            Bạn chưa xem phim nào!
+          </Text>
         ) : (
           <FlatList
             data={watchedMovies}

@@ -15,7 +15,7 @@ import { fetchMovies } from "@/services/api";
 import { icons } from "@/constants/icons";
 import MovieCardAdmin from "@/components/MovieCardAdmin";
 import { getAllMovies } from "@/services/apiService";
-import { useEffect, useState, useCallback  } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 
 
@@ -85,6 +85,13 @@ export default function AdminHome() {
           className="bg-blue-500 py-3 px-4 rounded-md mb-5 self-center"
         >
           <Text className="text-white font-semibold text-base">➕ Tạo phim mới</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => router.push("/admin/users")}
+          className="bg-green-500 py-3 px-4 rounded-md mb-5 self-center"
+        >
+          <Text className="text-white font-semibold text-base">👤 Quản lý Users</Text>
         </TouchableOpacity>
 
         <Text className="text-lg text-white font-bold mt-6 mb-3">

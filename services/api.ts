@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = process.env.BASE_URL || "http://192.168.1.4:5000/api";
+const BASE_URL = process.env.BASE_URL || "http://172.16.0.2:5000/api";
 
 export const TMDB_CONFIG = {
   BASE_URL: "https://api.themoviedb.org/3",

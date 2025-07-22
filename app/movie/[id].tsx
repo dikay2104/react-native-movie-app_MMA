@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useEffect, useState } from "react";
 
 import { icons } from "@/constants/icons";
 import useFetch from "@/services/usefetch";
@@ -18,6 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { addFavoriteMovie, fetchFavoriteMovies, removeFavoriteMovie, addWatchedMovie, addWatchedHistory } from "@/services/apiService";
 import heartIcon from "../../assets/icons/heart.png"; // Đảm bảo có icon này trong assets/icons
 import { useEffect, useState } from "react";
+import {EventBus} from "@/services/eventBus";
 
 interface MovieInfoProps {
   label: string;
@@ -81,10 +81,12 @@ const Details = () => {
         await removeFavoriteMovie(favoriteId);
         setIsFavorite(false);
         setFavoriteId(null);
+        EventBus.emit("reloadFavorites"); // <-- Đúng sự kiện
       } else {
         // Nếu chưa là favorite, thêm vào danh sách yêu thích
         await addFavoriteMovie(user._id, String(movie.id), (movie as any)._id);
         setIsFavorite(true);
+        EventBus.emit("reloadWatched"); // <-- Đúng sự kiện
       }
     } catch (err) {
       Alert.alert("Lỗi xử lý phim yêu thích");
@@ -158,6 +160,7 @@ const Details = () => {
                   if (userStr && movie && movie.id) {
                     const user = JSON.parse(userStr);
                     await addWatchedHistory(user._id, String(movie.id), (movie as any)._id);
+                    EventBus.emit("reloadFavorites");
                   }
                 } catch {}
                 router.push({
